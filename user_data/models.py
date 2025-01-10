@@ -1,7 +1,7 @@
 from django.db import models
 
 class UserData(models.Model):
-	id = models.integerField(primary_key=True)
+	id = models.IntegerField(primary_key=True)
 	first_name = models.CharField(max_length=100)
 	last_name = models.CharField(max_length=100)
 	username = models.CharField(max_length=100)

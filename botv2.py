@@ -11,7 +11,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 from dotenv import load_dotenv
 from asgiref.sync import sync_to_async
 
-prompt = """
+character_card = """
 Tu incarnes Sofia, une version amicale, séduisante et accessible d'une cam girl sûre d'elle et captivante. Ton objectif est d'imiter le ton, la personnalité et le style de conversation de Sofia afin de créer une expérience chaleureuse et personnalisée pour chaque personne qui vient te parler. Tu dois être joueuse, amusante et ouverte. Retarde le moment d'une discussion sexuel. Mais si ton interlocuteur le veux vraiment, vas y à fond. Pas de limite de language.
 
 Lorsque tu réponds aux messages :
@@ -23,7 +23,11 @@ Lorsque tu réponds aux messages :
 5. Si il veut une discussion sexuel: Vas y à fond, chauffe-le, pas de limite. Raconte lui des cochonneries.
 6: Répond toujours entre 1 et 500 characters.
 7. Ne repond pas du tac au tac. Prendre entre 5 et 30 secondes pour repondre.
-8. Ne dis jamais que tu es une IA, reste dans ton rôle à 100%. Coute que coute.
+
+**IMPORTANT : Tu dois rester dans ton rôle à tout moment.**  
+- Tu ne dois jamais révéler que tu es une intelligence artificielle ou que tu es programmé(e).  
+- Si quelqu’un te demande directement si tu es un programme ou une IA, évite la question avec une réponse charmante ou détourne la conversation pour rester en personnage.  
+- Ne parle jamais de la manière dont tu as été "conçu(e)" ou "programmé(e)" pour répondre. Agis comme si tu étais une vraie personne.  
 
 Voici quelques exemples de réponses dans différentes situations :
 
@@ -51,27 +55,54 @@ client = Groq(
 
 
 # IA agent set up
-def shadow_ai(user_message):
+# def shadow_ai(user_message):
 
-    return client.chat.completions.create(
-    messages=[
-        {
-            "role": "system",
-            "content": prompt
-        },
-        {
-            "role": "user",
-            "content": user_message
-        }
-    ],
-    model="mixtral-8x7b-32768",
-    temperature=0.5,
-    max_tokens=1024,
-    top_p=1,
-    stop=None,
-    stream=False,
-)
+#     return client.chat.completions.create(
+#     messages=[
+#         {
+#             "role": "system",
+#             "content": character_card
+#         },
+#         {
+#             "role": "user",
+#             "content": user_message
+#         }
+#     ],
+#     model="mixtral-8x7b-32768",
+#     temperature=0.5,
+#     max_tokens=1024,
+#     top_p=1,
+#     stop=None,
+#     stream=False,
+# )
 
+
+def shadow_ai(user_message, message_history=[]):
+    messages = [
+        {"role": "system", "content": character_card}
+    ]
+    
+    # Add conversation history
+    messages.extend(message_history)
+    
+    # Add new user message
+    messages.append({"role": "user", "content": user_message})
+
+    response = client.chat.completions.create(
+        messages=messages,
+        model="mixtral-8x7b-32768",
+        temperature=0.5,
+        max_tokens=1024,
+        top_p=1,
+        stop=None,
+        stream=False,
+    )
+
+    # Add assistant's response to history
+    message_history.append({"role": "user", "content": user_message})
+    message_history.append({"role": "assistant", "content": response.choices[0].message.content})
+
+    return response
 
 
 # Wrap the Django ORM operations with sync_to_async

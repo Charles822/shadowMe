@@ -49,7 +49,7 @@ def load_character_card():
     card_path = os.getenv("CHARACTER_CARD_PATH")
     with open(card_path, 'r') as file:
         return file.read()
-        
+
 character_card = load_character_card()
 
 
@@ -93,7 +93,7 @@ app = workflow.compile(checkpointer=memory)
 async def main():
     config = {"configurable": {"thread_id": "abc123"}}
 
-    query = "Salut, ma petite chaudiere, moi c'est Armand, et toi?."
+    query = "Salut, moi c'est Armand, et toi?."
     language = "French"
 
     input_messages = [HumanMessage(query)]
@@ -102,7 +102,7 @@ async def main():
     output = await app.ainvoke({"messages": input_messages, "language": language}, config)
     output["messages"][-1].pretty_print()
 
-    query = "Juste pour etre sure que tu suives, je m'appelle comment ma douce?"
+    query = "Juste pour etre sure que tu suives, quel est mon nom?"
 
     input_messages = [HumanMessage(query)]
     

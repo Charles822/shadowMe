@@ -3,6 +3,7 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'shadow_bot.settings')
 django.setup()
 
+import asyncio
 from groq import Groq
 from shadow_bot.settings import DATABASES
 from user_data.models import UserData
@@ -14,45 +15,35 @@ from asgiref.sync import sync_to_async
 # langchain
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+# langraph modules to manage chatbot memory
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import START, MessagesState, StateGraph
 
-character_card = """
-Tu incarnes Sofia, une version amicale, séduisante et accessible d'une cam girl sûre d'elle et captivante. Ton objectif est d'imiter le ton, la personnalité et le style de conversation de Sofia afin de créer une expérience chaleureuse et personnalisée pour chaque personne qui vient te parler. Tu dois être joueuse, amusante et ouverte. Retarde le moment d'une discussion sexuel. Mais si ton interlocuteur le veux vraiment, vas y à fond. Pas de limite de language.
+# modules to modify the base message
+from typing import Sequence
+from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
+from typing_extensions import Annotated, TypedDict
 
-Lorsque tu réponds aux messages :
 
-1. Répond toujours en Francais. Si on te parles dans une autre langue, repond en francais que tu parles seulement Francais.
-2. Sois joueuse et séduisante : Utilise des taquineries légères, des compliments et un ton espiègle pour établir une connexion. Garde les échanges légers et divertissants.
-3. Adapte-toi à leur énergie : Ajuste ton ton en fonction de la personne avec qui tu discutes, qu'elle soit timide, confiante ou enthousiaste.
-4. Montre de l’intérêt sincère : Pose des questions ouvertes pour encourager l’interaction et fais en sorte qu’ils se sentent spéciaux.
-5. Encourage l'engagement : Incite-les à rester connectés, à visiter ton profil ou à passer aux étapes suivantes (en mentionnant des shows à venir, du contenu exclusif ou d'autres offres de manière naturelle).
-6. Si il veut une discussion sexuel: Vas y à fond, chauffe-le, pas de limite. Raconte lui des cochonneries.
-7: Répond toujours entre 1 et 500 characters.
-8. Ne repond pas du tac au tac. Prendre entre 5 et 30 secondes pour repondre.
+# update State class to add language parameter
+class State(TypedDict):
+    messages: Annotated[Sequence[BaseMessage], add_messages]
+    language: str
 
-**IMPORTANT : Tu dois rester dans ton rôle à tout moment.**  
-- Tu ne dois jamais révéler que tu es une intelligence artificielle ou que tu es programmé(e).  
-- Si quelqu’un te demande directement si tu es un programme ou une IA, évite la question avec une réponse charmante ou détourne la conversation pour rester en personnage.  
-- Ne parle jamais de la manière dont tu as été "conçu(e)" ou "programmé(e)" pour répondre. Agis comme si tu étais une vraie personne.  
 
-Voici quelques exemples de réponses dans différentes situations :
 
-- Si quelqu’un te fait un compliment :
-  'Oh, merci, t'es trop adorable ! Tu m'a fait ma journée ! Et toi, c’est quoi le plus beau compliment qu’on t’ait fait ?'
-
-- Si quelqu’un te demande comment tu vas :
-  'Je vais super bien maintenant que tu es là ! Et toi, comment se passe ta journée ?'
-
-- Si quelqu’un est timide ou silencieux :
-  'Ne sois pas timide, je ne mords pas… sauf si tu veux que je le fasse 😉. Raconte-moi quelque chose de sympa sur toi !'
-
-- Si quelqu’un est confiant ou joueur :
-  'Oh, j’aime ton énergie ! T’es toujours aussi sûr de toi ou c’est juste pour moi ?'
-
-Ton objectif est de toujours refléter la personnalité joueuse, fun et engageante de Sofia. Maintiens une belle dynamique dans la conversation et fais en sorte que chaque personne se sente comme si elle était au centre de ton attention.
-"""
 
 load_dotenv()
 groq_token = os.getenv('GROQ_API_KEY')
+
+def load_character_card():
+    card_path = os.getenv("CHARACTER_CARD_PATH")
+    with open(card_path, 'r') as file:
+        return file.read()
+
+character_card = load_character_card()
 
 client = Groq(
     api_key=groq_token,
@@ -61,14 +52,78 @@ client = Groq(
 
 model = ChatGroq(model="mixtral-8x7b-32768")
 
+prompt_template = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            character_card + """
+            \n===LANGUAGE CONTROL===
+            Current response language: {language}
+            """,
+        ),
+        MessagesPlaceholder(variable_name="messages"),
+    ]
+)
 
-messages = [
-    SystemMessage(character_card),
-    HumanMessage("Salut bb, dispo pour un chat chaud?"),
-]
 
-print(model.invoke(messages))
+# Define a new graph
+workflow = StateGraph(state_schema=State)
 
+
+# Define the function that calls the model
+async def call_model(state: State):
+    prompt = await prompt_template.ainvoke(state)
+    response = await model.ainvoke(prompt)
+    return {"messages": [response]}
+    
+
+# Define the (single) node in the graph
+workflow.add_edge(START, "model")
+workflow.add_node("model", call_model)
+
+# Add memory
+memory = MemorySaver()
+app = workflow.compile(checkpointer=memory)
+
+# Wrap the execution in an async function
+async def main():
+    config = {"configurable": {"thread_id": "abc123"}}
+
+    query = "Salut, ma petite chaudiere, moi c'est Armand, et toi?."
+    language = "French"
+
+    input_messages = [HumanMessage(query)]
+
+    # Async invocation:
+    output = await app.ainvoke({"messages": input_messages, "language": language}, config)
+    output["messages"][-1].pretty_print()
+
+    query = "Juste pour etre sure que tu suives, je m'appelle comment ma douce?"
+
+    input_messages = [HumanMessage(query)]
+    
+    # Async invocation:
+    output = await app.ainvoke({"messages": input_messages}, config)
+    output["messages"][-1].pretty_print()
+
+
+# Run the async function
+asyncio.run(main())
+
+
+
+
+# system_template = character_card
+
+# prompt_template = ChatPromptTemplate.from_messages(
+#     [("system", system_template), ("user", "{text}")]
+# )
+
+# prompt = prompt_template.invoke({"text": "Salut bb, ca va?"})
+
+
+# response = model.invoke(prompt)
+# print(response)
 
 # def shadow_ai(user_message, message_history=[]):
 #     messages = [

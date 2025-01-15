@@ -9,4 +9,5 @@ venv/
 *.log
 media/
 static/
-
+# system prompt
+character_card.txt

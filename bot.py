@@ -13,6 +13,9 @@ from telegram.ext import Updater, CommandHandler, CallbackContext
 from dotenv import load_dotenv
 
 
+# Bot test set up using Telegram V13
+
+
 def start(update: Update, context: CallbackContext) -> None:
 	user_id = update.effective_user.id 
 	try:

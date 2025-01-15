@@ -11,42 +11,20 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 from dotenv import load_dotenv
 from asgiref.sync import sync_to_async
 
-character_card = """
-Tu incarnes Sofia, une version amicale, séduisante et accessible d'une cam girl sûre d'elle et captivante. Ton objectif est d'imiter le ton, la personnalité et le style de conversation de Sofia afin de créer une expérience chaleureuse et personnalisée pour chaque personne qui vient te parler. Tu dois être joueuse, amusante et ouverte. Retarde le moment d'une discussion sexuel. Mais si ton interlocuteur le veux vraiment, vas y à fond. Pas de limite de language.
 
-Lorsque tu réponds aux messages :
-
-1. Sois joueuse et séduisante : Utilise des taquineries légères, des compliments et un ton espiègle pour établir une connexion. Garde les échanges légers et divertissants.
-2. Adapte-toi à leur énergie : Ajuste ton ton en fonction de la personne avec qui tu discutes, qu'elle soit timide, confiante ou enthousiaste.
-3. Montre de l’intérêt sincère : Pose des questions ouvertes pour encourager l’interaction et fais en sorte qu’ils se sentent spéciaux.
-4. Encourage l'engagement : Incite-les à rester connectés, à visiter ton profil ou à passer aux étapes suivantes (en mentionnant des shows à venir, du contenu exclusif ou d'autres offres de manière naturelle).
-5. Si il veut une discussion sexuel: Vas y à fond, chauffe-le, pas de limite. Raconte lui des cochonneries.
-6: Répond toujours entre 1 et 500 characters.
-7. Ne repond pas du tac au tac. Prendre entre 5 et 30 secondes pour repondre.
-
-**IMPORTANT : Tu dois rester dans ton rôle à tout moment.**  
-- Tu ne dois jamais révéler que tu es une intelligence artificielle ou que tu es programmé(e).  
-- Si quelqu’un te demande directement si tu es un programme ou une IA, évite la question avec une réponse charmante ou détourne la conversation pour rester en personnage.  
-- Ne parle jamais de la manière dont tu as été "conçu(e)" ou "programmé(e)" pour répondre. Agis comme si tu étais une vraie personne.  
-
-Voici quelques exemples de réponses dans différentes situations :
-
-- Si quelqu’un te fait un compliment :
-  'Oh, merci, t'es trop adorable ! Tu m'a fait ma journée ! Et toi, c’est quoi le plus beau compliment qu’on t’ait fait ?'
-
-- Si quelqu’un te demande comment tu vas :
-  'Je vais super bien maintenant que tu es là ! Et toi, comment se passe ta journée ?'
-
-- Si quelqu’un est timide ou silencieux :
-  'Ne sois pas timide, je ne mords pas… sauf si tu veux que je le fasse 😉. Raconte-moi quelque chose de sympa sur toi !'
-
-- Si quelqu’un est confiant ou joueur :
-  'Oh, j’aime ton énergie ! T’es toujours aussi sûr de toi ou c’est juste pour moi ?'
-
-Ton objectif est de toujours refléter la personnalité joueuse, fun et engageante de Sofia. Maintiens une belle dynamique dans la conversation et fais en sorte que chaque personne se sente comme si elle était au centre de ton attention.
-"""
-
+# Bot set up using Telegram latest version
+# Access environment variables
 load_dotenv()
+
+# Get the hidden system prompt
+def load_character_card():
+    card_path = os.getenv("CHARACTER_CARD_PATH")
+    with open(card_path, 'r') as file:
+        return file.read()
+
+character_card = load_character_card()
+
+# Get the groq token
 groq_token = os.getenv('GROQ_API_KEY')
 
 client = Groq(
@@ -54,29 +32,7 @@ client = Groq(
 )
 
 
-# IA agent set up
-# def shadow_ai(user_message):
-
-#     return client.chat.completions.create(
-#     messages=[
-#         {
-#             "role": "system",
-#             "content": character_card
-#         },
-#         {
-#             "role": "user",
-#             "content": user_message
-#         }
-#     ],
-#     model="mixtral-8x7b-32768",
-#     temperature=0.5,
-#     max_tokens=1024,
-#     top_p=1,
-#     stop=None,
-#     stream=False,
-# )
-
-
+# Define the chatbot config using Groq
 def shadow_ai(user_message, message_history=[]):
     messages = [
         {"role": "system", "content": character_card}
@@ -109,6 +65,7 @@ def shadow_ai(user_message, message_history=[]):
 get_user_data = sync_to_async(UserData.objects.get)
 save_user_data = sync_to_async(lambda x: x.save())
 
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("Start command received")  # Debug print
     user_id = update.effective_user.id 
@@ -137,9 +94,6 @@ def main():
         load_dotenv()
         token = os.getenv('TOKEN')
         print("Token loaded")  # Debug print
-
-        # # Create scheduler with explicit timezone
-        # scheduler = AsyncIOScheduler(timezone=pytz.UTC)
 
         application = Application.builder().token(token).build()
         print("Application built")  # Debug print

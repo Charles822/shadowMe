@@ -41,7 +41,7 @@ from langgraph.prebuilt import ToolNode, tools_condition
 # memory
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.prompts import PromptTemplate
-
+from langchain.chat_models import init_chat_model
 
 
 load_dotenv()
@@ -59,10 +59,13 @@ os.getenv('LANGSMITH_API_KEY')
 
 # set up model
 os.getenv('MISTRAL_API_KEY')
+os.getenv('COHERE_API_KEY')
 
 # llm = ChatMistralAI(model="open-mixtral-8x22b")
-llm = ChatMistralAI(model="mistral-large-latest")
+# llm = ChatMistralAI(model="mistral-large-latest")
 
+
+llm = init_chat_model("command-r-plus", model_provider="cohere")
 
 # RAG Set Up
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
@@ -245,11 +248,11 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print('inspect chat triggered')
     chat_id = update.effective_chat.id
     # or you might use update.effective_message.chat_id
-    print(chat_id)
+    # print(chat_id)
 
     chat_info = await context.bot.get_chat(chat_id)
     # chat_info can be an instance of either Chat or ChatFullInfo
-    print(chat_info)
+    # print(chat_info)
 
     # For a business chat, you may have the extended attributes:
     if isinstance(chat_info, ChatFullInfo):
@@ -276,7 +279,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         user_data = await get_user_data(id=user_id)
-        await update.business_message.reply_text(f'Welcome back {user_data.first_name}!')
+        # await update.business_message.reply_text(f'Welcome back {user_data.first_name}!')
     except UserData.DoesNotExist:
         new_user = UserData(
             id=user_id,
@@ -285,7 +288,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             username=update.effective_user.username
         )
         await save_user_data(new_user)
-        await update.business_message.reply_text(f'Welcome to ShadowMe!')
+        # await update.business_message.reply_text(f'Welcome to ShadowMe!')
     print('The user', update.effective_user.first_name)
 
     try:

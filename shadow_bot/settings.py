@@ -11,6 +11,10 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+import psycopg2
+from dotenv import load_dotenv
+import os
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -75,10 +79,33 @@ WSGI_APPLICATION = 'shadow_bot.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
+# SUPABASE SET UP
+
+# Load environment variables from .env
+load_dotenv()
+
+# Fetch variables
+SUPA_USER = os.getenv("SUPA_USER")
+SUPA_PASSWORD = os.getenv("SUPA_PASSWORD")
+SUPA_HOST = os.getenv("SUPA_HOST")
+SUPA_PORT = os.getenv("SUPA_PORT")
+SUPA_DBNAME = os.getenv("SUPA_DBNAME")
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': SUPA_DBNAME,
+        'USER': SUPA_USER,
+        'PASSWORD': SUPA_PASSWORD,
+        'HOST': SUPA_HOST,
+        'PORT': SUPA_PORT
     }
 }
 

@@ -9,6 +9,7 @@ from shadow_bot.settings import DATABASES
 from user_data.models import UserData
 from telegram import Update, ChatFullInfo
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.constants import ChatAction
 from dotenv import load_dotenv
 from asgiref.sync import sync_to_async
 
@@ -206,83 +207,48 @@ get_user_data = sync_to_async(UserData.objects.get)
 save_user_data = sync_to_async(lambda x: x.save())
 
 
-# async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     print("Start command received")  # Debug print
-#     user_id = update.effective_user.id 
-#     try:
-#         user_data = await get_user_data(id=user_id)
-#         await update.message.reply_text(f'Welcome back {user_data.first_name}!')
-#     except UserData.DoesNotExist:
-#         new_user = UserData(
-#             id=user_id,
-#             first_name=update.effective_user.first_name,
-#             last_name=update.effective_user.last_name,
-#             username=update.effective_user.username
-#         )
-#         await save_user_data(new_user)
-#         await update.business_message.reply_text(f'Welcome to ShadowMe!')
-#     print(update.effective_user.first_name)
-
-
-# async def inspect_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     print('inspect chat triggered')
-#     chat_id = update.effective_chat.id
-#     # or you might use update.effective_message.chat_id
-#     print(chat_id)
-
-#     chat_info = await context.bot.get_chat(chat_id)
-#     # chat_info can be an instance of either Chat or ChatFullInfo
-#     print(chat_info)
-
-#     # For a business chat, you may have the extended attributes:
-#     if isinstance(chat_info, ChatFullInfo):
-#         # Potentially available fields
-#         print("full title:", chat_info.title)
-#         print("business_intro:", chat_info.business_intro)
-#         # etc.
-#     else:
-#         # It's just a basic Chat object
-#         print("This is a normal Chat object, not ChatFullInfo")
-
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print('inspect chat triggered')
-    chat_id = update.effective_chat.id
-    # or you might use update.effective_message.chat_id
-    # print(chat_id)
+    # print('inspect chat triggered')
+    # chat_id = update.effective_chat.id
+    # # or you might use update.effective_message.chat_id
+    # # print(chat_id)
 
-    chat_info = await context.bot.get_chat(chat_id)
-    # chat_info can be an instance of either Chat or ChatFullInfo
-    # print(chat_info)
+    # chat_info = await context.bot.get_chat(chat_id)
+    # # chat_info can be an instance of either Chat or ChatFullInfo
+    # # print(chat_info)
 
-    # For a business chat, you may have the extended attributes:
-    if isinstance(chat_info, ChatFullInfo):
-        # Potentially available fields
-        print("full title:", chat_info.title)
-        print("business_intro:", chat_info.business_intro)
-        # etc.
-    else:
-        # It's just a basic Chat object
-        print("This is a normal Chat object, not ChatFullInfo")
+    # # For a business chat, you may have the extended attributes:
+    # if isinstance(chat_info, ChatFullInfo):
+    #     # Potentially available fields
+    #     print("full title:", chat_info.title)
+    #     print("business_intro:", chat_info.business_intro)
+    #     # etc.
+    # else:
+    #     # It's just a basic Chat object
+    #     print("This is a normal Chat object, not ChatFullInfo")
     
-    print('BusinessConnection triggered')
+    # print('BusinessConnection triggered')
 
     # print(update.to_dict())
 
-    bc = update.business_message.business_connection_id
+    # bc = update.business_message.business_connection_id
 
-    business_connection = chat_info = await context.bot.get_business_connection(bc)
+    # business_connection = chat_info = await context.bot.get_business_connection(bc)
 
-    print(business_connection)
+    # print(business_connection)
 
 
-    user_id = update.effective_user.id 
+    telegram_id = update.effective_user.id 
+    print(telegram_id)
 
     try:
-        user_data = await get_user_data(id=user_id)
+        print('Checking user data')
+        user_data = await get_user_data(telegram_id=telegram_id)
+        print('User already exist')
         # await update.business_message.reply_text(f'Welcome back {user_data.first_name}!')
     except UserData.DoesNotExist:
         new_user = UserData(
-            id=user_id,
+            telegram_id=telegram_id,
             first_name=update.effective_user.first_name,
             last_name=update.effective_user.last_name,
             username=update.effective_user.username
@@ -297,6 +263,15 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         response = await shadow_ai(user_message)  # awaited here
         if response:  # make sure we have a response
+            # 1. Indicate the bot is "typing" for a short random duration
+            print("DEBUG chat_id:", update.effective_chat.id)
+            await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.TYPING)
+
+            # # 2. Wait a random time to simulate typing
+            # # For example, between 1 and 3 seconds
+            await asyncio.sleep(random.uniform(1, 3))
+
+            # 3. Respond
             await update.business_message.reply_text(str(response))  # convert to string explicitly
         else:
             await update.business_message.reply_text("No response generated")

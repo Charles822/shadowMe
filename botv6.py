@@ -5,9 +5,10 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'shadow_bot.settings')
 django.setup()
 
 import asyncio
+import random
 from shadow_bot.settings import DATABASES
 from user_data.models import UserData
-from telegram import Update, ChatFullInfo
+from telegram import Update, ChatFullInfo, Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from telegram.constants import ChatAction
 from dotenv import load_dotenv
@@ -16,6 +17,7 @@ from asgiref.sync import sync_to_async
 
 from IPython.display import Image, display
 from langchain_mistralai import ChatMistralAI
+from langchain_cohere import ChatCohere
 
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.vectorstores import InMemoryVectorStore
@@ -63,10 +65,9 @@ os.getenv('MISTRAL_API_KEY')
 os.getenv('COHERE_API_KEY')
 
 # llm = ChatMistralAI(model="open-mixtral-8x22b")
-# llm = ChatMistralAI(model="mistral-large-latest")
+llm = ChatMistralAI(model="mistral-large-latest")
+# llm = ChatCohere(model="command-r-plus")
 
-
-llm = init_chat_model("command-r-plus", model_provider="cohere")
 
 # RAG Set Up
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
@@ -93,7 +94,7 @@ docs = [
 
 # print(docs)
 
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100)
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=20)
 all_splits = text_splitter.split_documents(docs)
 
 
@@ -103,29 +104,41 @@ _ = vector_store.add_documents(documents=all_splits)
 graph_builder = StateGraph(MessagesState)
 
 
+# conversation = [SystemMessage(character_card)]
+
+# TOOLS 
 # Create a tool for the retrieval, allows better query to search / or respond directly
 @tool(response_format="content_and_artifact")
 def retrieve(query: str):
     """Retrieve information related to a query."""
     retrieved_docs = vector_store.similarity_search(query, k=2)
+    print('RETRIEVE TOOL HAS BEEN CALLED')
     serialized = "\n\n".join(
         (f"Source: {doc.metadata}\n" f"Content: {doc.page_content}")
         for doc in retrieved_docs
     )
+
     return serialized, retrieved_docs
+
+@tool
+async def alert_creator_tool() -> str:
+    """ Call the alert_creator function when the user is shows sign of being ready to pay."""
+    await alert_creator(1002947084, 'sofiatilla')
+    print('ALERT CREATOR TOOL HAS BEEN CALLED')
+    return "Message to creator has been sent."
 
 # Step 1: Generate an AIMessage that may include a tool-call to be sent.
 def query_or_respond(state: MessagesState):
     conversation = [SystemMessage(character_card)] + state["messages"]
 
-    llm_with_tools = llm.bind_tools([retrieve])
+    llm_with_tools = llm.bind_tools([alert_creator_tool, retrieve])
     response = llm_with_tools.invoke(conversation)
 
     # MessagesState appends messages to state instead of overwriting
     return {"messages": [response]}
 
 # Step 2: Execute the retrieval.
-tools = ToolNode([retrieve])
+tools = ToolNode([alert_creator_tool, retrieve])
 
 
 # Step 3: Generate a response using the retrieved content.
@@ -142,13 +155,15 @@ def generate(state: MessagesState):
 
     # Format into prompt
     docs_content = "\n\n".join(doc.content for doc in tool_messages)
-    system_message_content = f""" 
-        Tu peux t'aider du document ci-dessous si la réponse ne t'es pas évidente. 
-        Si tu ne trouves pas la réponse là-dedans, réponds simplement que tu ne sais pas.
+    # system_message_content = f"""
+    #     Ton role principal: 
+    #     {character_card}
+    #     Tu peux t'aider du document ci-dessous si la réponse ne t'es pas évidente. 
+    #     Si tu ne trouves pas la réponse là-dedans, réponds simplement que tu ne sais pas.
 
-        Document:
-        {docs_content}
-            """
+    #     Document:
+    #     {docs_content}
+    #         """
     conversation_messages = [
         message
         for message in state["messages"]
@@ -156,7 +171,7 @@ def generate(state: MessagesState):
         or (message.type == "ai" and not message.tool_calls)
     ]
 
-    prompt = [SystemMessage(system_message_content)] + conversation_messages # try to append to system m,essage
+    prompt = [SystemMessage(character_card)] + conversation_messages # try to append to system message
 
     response = llm.invoke(prompt)
   
@@ -202,9 +217,75 @@ async def shadow_ai(user_message):
 
 # telegram bot part
 
+bot_token = os.environ['TOKEN']
+bot = Bot(token=bot_token)
+
 # Wrap the Django ORM operations with sync_to_async
 get_user_data = sync_to_async(UserData.objects.get)
 save_user_data = sync_to_async(lambda x: x.save())
+
+# (creator_business_id, client_business_id) -> bool
+human_takeover_flags = {
+    ('Sirebrown', 'sofiatilla'): False,
+}
+
+# user_chat_id = 1002947084
+
+async def alert_creator(user_chat_id, client_username):
+    print('Debug Creator ID in Alert Creator', user_chat_id, client_username)
+    print('DEBUG ALERT CREATOR TRIGGERED')
+
+    try:
+        response = await bot.send_message(
+            chat_id=user_chat_id,
+            text=f"Client {client_username} signaled readiness to pay!"
+        )
+        print("Message sent successfully:", response)
+    except Exception as e:
+        print("Error sending message:", e)
+
+
+async def human_on(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # 1. Identify the creator
+    creator_username = update.effective_user.username
+    print('Creator username accessed via Human On', creator_username)
+
+    # 2. Parse the target client ID from args
+    command_args = context.args
+    if not command_args:
+        await update.message.reply_text("Usage: /human_on <client_username>")
+        return
+    client_username = command_args[0]
+    print(client_username)
+
+    # 3. Set the flag
+    human_takeover_flags[(creator_username, client_username)] = True
+
+    # 4. Confirm
+    await update.message.reply_text(
+        f"Human takeover ON for client `{client_username}` under creator `{creator_username}`."
+    )
+
+async def human_off(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # 1. Identify the creator
+    creator_username = update.effective_user.username
+    print('Creator username accessed via Human Off', creator_username)
+
+    # 2. Parse the target client ID from args
+    command_args = context.args
+    if not command_args:
+        await update.message.reply_text("Usage: /human_off <client_business_id>")
+        return
+    client_username = command_args[0]
+    print(client_username)
+
+    # 3. Toggle off
+    human_takeover_flags[(creator_username, client_username)] = False
+
+    # 4. Confirm
+    await update.message.reply_text(
+        f"Human takeover OFF for client `{client_username}` under creator `{creator_username}`."
+    )
 
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -240,6 +321,7 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     telegram_id = update.effective_user.id 
     print(telegram_id)
+    print(update.to_dict())
 
     try:
         print('Checking user data')
@@ -259,17 +341,26 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         user_message = update.business_message.text
+        # Get creator ID
+        print('Get creator ID')
+        bc = update.business_message.business_connection_id
+        business_connection = await context.bot.get_business_connection(bc)
+        print(business_connection)
+        creator_id = business_connection.user.username
+        print('Debug Creator ID in Echo', creator_id)
+        client_username = update.effective_user.username
         # test user data
 
         response = await shadow_ai(user_message)  # awaited here
-        if response:  # make sure we have a response
+        if response and human_takeover_flags[(creator_id, client_username)] == False:  # make sure we have a response
             # 1. Indicate the bot is "typing" for a short random duration
             print("DEBUG chat_id:", update.effective_chat.id)
-            await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.TYPING)
+
+            await context.bot.send_chat_action(chat_id=update.effective_chat.id, business_connection_id=bc, action=ChatAction.TYPING)
 
             # # 2. Wait a random time to simulate typing
             # # For example, between 1 and 3 seconds
-            await asyncio.sleep(random.uniform(1, 3))
+            await asyncio.sleep(random.uniform(5, 10))
 
             # 3. Respond
             await update.business_message.reply_text(str(response))  # convert to string explicitly
@@ -292,6 +383,12 @@ def main():
         
         # application.add_handler(CommandHandler('start', start))
         # print("Command Handler added")  # Debug print
+
+        application.add_handler(CommandHandler('human_on', human_on))
+        print("Command human_on Handler added")  # Debug print
+
+        application.add_handler(CommandHandler('human_off', human_off))
+        print("Command human_on Handler added")  # Debug print
 
         # Handle bot response to message
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo)) #handles text message

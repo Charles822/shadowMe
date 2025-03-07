@@ -223,7 +223,7 @@ async def shadow_ai(user_message, thread_id):
 # telegram bot part
 
 bot_token = os.environ['TOKEN']
-# bot = Bot(token=bot_token)
+bot = Bot(token=bot_token)
 
 # Wrap the Django ORM operations with sync_to_async
 get_user_data = sync_to_async(UserData.objects.get)
@@ -363,7 +363,10 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         thread_id = creator_id + client_username 
         print(thread_id)
 
-        human_takeover_flags[(creator_id, client_username)] = False
+        if human_takeover_flags[(creator_id, client_username)] in human_takeover_flags:
+            pass
+        else: 
+            human_takeover_flags[(creator_id, client_username)] = False
         print('Setting human_takeover in echo, human_takeover equal:', human_takeover_flags[(creator_id, client_username)])
 
         response = await shadow_ai(user_message, thread_id)  # awaited here

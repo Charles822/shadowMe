@@ -5,7 +5,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'shadow_bot.settings')
 django.setup()
 
 import asyncio
-from groq import Groq
+# from groq import Groq
 from shadow_bot.settings import DATABASES
 from user_data.models import UserData
 

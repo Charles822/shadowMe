@@ -1,4 +1,5 @@
 from .common import *
+from dotenv import load_dotenv
 
 DEBUG = False
 

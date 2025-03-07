@@ -1,7 +1,7 @@
 import os
 import getpass
 import django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'shadow_bot.settings.prod')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'shadow_bot.settings.dev')
 django.setup()
 
 import asyncio
@@ -206,8 +206,8 @@ graph = graph_builder.compile(checkpointer=memory)
 
 # input_message = "As tu des videos gratuites à me donner?"
 
-async def shadow_ai(user_message):
-    config = {"configurable": {"thread_id": "abc123"}}
+async def shadow_ai(user_message, thread_id):
+    config = {"configurable": {"thread_id": thread_id}}
 
     query = user_message
     # language = "Francais"
@@ -223,16 +223,19 @@ async def shadow_ai(user_message):
 # telegram bot part
 
 bot_token = os.environ['TOKEN']
-bot = Bot(token=bot_token)
+# bot = Bot(token=bot_token)
 
 # Wrap the Django ORM operations with sync_to_async
 get_user_data = sync_to_async(UserData.objects.get)
 save_user_data = sync_to_async(lambda x: x.save())
 
 # (creator_business_id, client_business_id) -> bool
-human_takeover_flags = {
-    ('Sirebrown', 'sofiatilla'): False,
-}
+# human_takeover_flags = {
+#     ('Sirebrown', 'sofiatilla'): False,
+# }
+
+# initiate human flag
+human_takeover_flags = {}
 
 # user_chat_id = 1002947084
 
@@ -328,6 +331,8 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(telegram_id)
     print(update.to_dict())
 
+    
+
     try:
         print('Checking user data')
         user_data = await get_user_data(telegram_id=telegram_id)
@@ -355,8 +360,13 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print('Debug Creator ID in Echo', creator_id)
         client_username = update.effective_user.username
         # test user data
+        thread_id = creator_id + client_username 
+        print(thread_id)
 
-        response = await shadow_ai(user_message)  # awaited here
+        human_takeover_flags[(creator_id, client_username)] = False
+        print('Setting human_takeover in echo, human_takeover equal:', human_takeover_flags[(creator_id, client_username)])
+
+        response = await shadow_ai(user_message, thread_id)  # awaited here
         if response and human_takeover_flags[(creator_id, client_username)] == False:  # make sure we have a response
             # 1. Indicate the bot is "typing" for a short random duration
             print("DEBUG chat_id:", update.effective_chat.id)
@@ -369,11 +379,11 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             # 3. Respond
             await update.business_message.reply_text(str(response))  # convert to string explicitly
-        else:
-            await update.business_message.reply_text("No response generated")
+        # else:
+            # await update.business_message.reply_text("No response generated")
     except Exception as e:
         print(f"Error in echo handler: {str(e)}")
-        await update.business_message.reply_text("Sorry, I encountered an error processing your message.")
+        await update.business_message.reply_text("Attend désolé je dois partir, je reviens tout à l'heure.")
 
 
 def main():

@@ -1,7 +1,7 @@
 import os
 import getpass
 import django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'shadow_bot.settings.dev')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'shadow_bot.settings.prod')
 django.setup()
 
 import asyncio

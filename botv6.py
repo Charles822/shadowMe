@@ -10,6 +10,7 @@ from django.conf import settings
 
 # Access DATABASES via the Django settings object
 DATABASES = settings.DATABASES
+print(settings.DATABASES)
 
 from user_data.models import UserData
 from telegram import Update, ChatFullInfo, Bot

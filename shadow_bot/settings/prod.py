@@ -2,7 +2,7 @@ from .common import *
 
 DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['https://shadowme.onrender.com']
 
 # SUPABASE SET UP
 

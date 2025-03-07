@@ -222,8 +222,8 @@ async def shadow_ai(user_message, thread_id):
 
 # telegram bot part
 
-bot_token = os.environ['TOKEN']
-bot = Bot(token=bot_token)
+# bot_token = os.environ['TOKEN']
+# bot = Bot(token=bot_token)
 
 # Wrap the Django ORM operations with sync_to_async
 get_user_data = sync_to_async(UserData.objects.get)
@@ -244,11 +244,12 @@ async def alert_creator(user_chat_id, client_username):
     print('DEBUG ALERT CREATOR TRIGGERED')
 
     try:
-        response = await bot.send_message(
-            chat_id=user_chat_id,
-            text=f"Client {client_username} signaled readiness to pay!"
-        )
-        print("Message sent successfully:", response)
+        # response = await bot.send_message(
+        #     chat_id=user_chat_id,
+        #     text=f"Client {client_username} signaled readiness to pay!"
+        # )
+        # print("Message sent successfully:", response)
+        print('TOOL SUCCESSFULLY CALLED')
     except Exception as e:
         print("Error sending message:", e)
 
@@ -331,7 +332,6 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(telegram_id)
     print(update.to_dict())
 
-    
 
     try:
         print('Checking user data')

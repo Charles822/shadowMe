@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-#-&a3n(@=kke-vaq0q7o0z0hq5^u@k(5s(62rp=r&1oue_49ar
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+
 
 ALLOWED_HOSTS = []
 
@@ -50,6 +50,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -86,28 +87,6 @@ WSGI_APPLICATION = 'shadow_bot.wsgi.application'
 #     }
 # }
 
-# SUPABASE SET UP
-
-# Load environment variables from .env
-load_dotenv()
-
-# Fetch variables
-SUPA_USER = os.getenv("SUPA_USER")
-SUPA_PASSWORD = os.getenv("SUPA_PASSWORD")
-SUPA_HOST = os.getenv("SUPA_HOST")
-SUPA_PORT = os.getenv("SUPA_PORT")
-SUPA_DBNAME = os.getenv("SUPA_DBNAME")
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': SUPA_DBNAME,
-        'USER': SUPA_USER,
-        'PASSWORD': SUPA_PASSWORD,
-        'HOST': SUPA_HOST,
-        'PORT': SUPA_PORT
-    }
-}
 
 
 # Password validation
@@ -144,7 +123,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
+
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

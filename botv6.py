@@ -1,12 +1,16 @@
 import os
 import getpass
 import django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'shadow_bot.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'shadow_bot.settings.dev')
 django.setup()
 
 import asyncio
 import random
-from shadow_bot.settings import DATABASES
+from django.conf import settings
+
+# Access DATABASES via the Django settings object
+DATABASES = settings.DATABASES
+
 from user_data.models import UserData
 from telegram import Update, ChatFullInfo, Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes

@@ -363,10 +363,9 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         thread_id = creator_id + client_username 
         print(thread_id)
 
-        if human_takeover_flags[(creator_id, client_username)] in human_takeover_flags:
-            pass
-        else: 
+        if (creator_id, client_username) not in human_takeover_flags.keys():
             human_takeover_flags[(creator_id, client_username)] = False
+
         print('Setting human_takeover in echo, human_takeover equal:', human_takeover_flags[(creator_id, client_username)])
 
         response = await shadow_ai(user_message, thread_id)  # awaited here

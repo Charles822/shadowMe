@@ -254,47 +254,47 @@ async def alert_creator(user_chat_id, client_username):
         print("Error sending message:", e)
 
 
-async def human_on(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # 1. Identify the creator
-    creator_username = update.effective_user.username
-    print('Creator username accessed via Human On', creator_username)
+# async def human_on(update: Update, context: ContextTypes.DEFAULT_TYPE):
+#     # 1. Identify the creator
+#     creator_username = update.effective_user.username
+#     print('Creator username accessed via Human On', creator_username)
 
-    # 2. Parse the target client ID from args
-    command_args = context.args
-    if not command_args:
-        await update.message.reply_text("Usage: /human_on <client_username>")
-        return
-    client_username = command_args[0]
-    print(client_username)
+#     # 2. Parse the target client ID from args
+#     command_args = context.args
+#     if not command_args:
+#         await update.message.reply_text("Usage: /human_on <client_username>")
+#         return
+#     client_username = command_args[0]
+#     print(client_username)
 
-    # 3. Set the flag
-    human_takeover_flags[(creator_username, client_username)] = True
+#     # 3. Set the flag
+#     human_takeover_flags[(creator_username, client_username)] = True
 
-    # 4. Confirm
-    await update.message.reply_text(
-        f"Human takeover ON for client `{client_username}` under creator `{creator_username}`."
-    )
+#     # 4. Confirm
+#     await update.message.reply_text(
+#         f"Human takeover ON for client `{client_username}` under creator `{creator_username}`."
+#     )
 
-async def human_off(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # 1. Identify the creator
-    creator_username = update.effective_user.username
-    print('Creator username accessed via Human Off', creator_username)
+# async def human_off(update: Update, context: ContextTypes.DEFAULT_TYPE):
+#     # 1. Identify the creator
+#     creator_username = update.effective_user.username
+#     print('Creator username accessed via Human Off', creator_username)
 
-    # 2. Parse the target client ID from args
-    command_args = context.args
-    if not command_args:
-        await update.message.reply_text("Usage: /human_off <client_business_id>")
-        return
-    client_username = command_args[0]
-    print(client_username)
+#     # 2. Parse the target client ID from args
+#     command_args = context.args
+#     if not command_args:
+#         await update.message.reply_text("Usage: /human_off <client_business_id>")
+#         return
+#     client_username = command_args[0]
+#     print(client_username)
 
-    # 3. Toggle off
-    human_takeover_flags[(creator_username, client_username)] = False
+#     # 3. Toggle off
+#     human_takeover_flags[(creator_username, client_username)] = False
 
-    # 4. Confirm
-    await update.message.reply_text(
-        f"Human takeover OFF for client `{client_username}` under creator `{creator_username}`."
-    )
+#     # 4. Confirm
+#     await update.message.reply_text(
+#         f"Human takeover OFF for client `{client_username}` under creator `{creator_username}`."
+#     )
 
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -398,14 +398,14 @@ def main():
         application = Application.builder().token(token).build()
         print("Application built")  # Debug print
         
-        # application.add_handler(CommandHandler('start', start))
-        # print("Command Handler added")  # Debug print
+        application.add_handler(CommandHandler('start', start))
+        print("Command Handler added")  # Debug print
 
-        application.add_handler(CommandHandler('human_on', human_on))
-        print("Command human_on Handler added")  # Debug print
+        # application.add_handler(CommandHandler('human_on', human_on))
+        # print("Command human_on Handler added")  # Debug print
 
-        application.add_handler(CommandHandler('human_off', human_off))
-        print("Command human_on Handler added")  # Debug print
+        # application.add_handler(CommandHandler('human_off', human_off))
+        # print("Command human_on Handler added")  # Debug print
 
         # Handle bot response to message
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo)) #handles text message

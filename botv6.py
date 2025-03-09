@@ -159,15 +159,7 @@ def generate(state: MessagesState):
 
     # Format into prompt
     docs_content = "\n\n".join(doc.content for doc in tool_messages)
-    # system_message_content = f"""
-    #     Ton role principal: 
-    #     {character_card}
-    #     Tu peux t'aider du document ci-dessous si la réponse ne t'es pas évidente. 
-    #     Si tu ne trouves pas la réponse là-dedans, réponds simplement que tu ne sais pas.
 
-    #     Document:
-    #     {docs_content}
-    #         """
     conversation_messages = [
         message
         for message in state["messages"]
@@ -252,48 +244,6 @@ async def alert_creator(user_chat_id, client_username):
     except Exception as e:
         print("Error sending message:", e)
 
-
-# async def human_on(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     # 1. Identify the creator
-#     creator_username = update.effective_user.username
-#     print('Creator username accessed via Human On', creator_username)
-
-#     # 2. Parse the target client ID from args
-#     command_args = context.args
-#     if not command_args:
-#         await update.message.reply_text("Usage: /human_on <client_username>")
-#         return
-#     client_username = command_args[0]
-#     print(client_username)
-
-#     # 3. Set the flag
-#     human_takeover_flags[(creator_username, client_username)] = True
-
-#     # 4. Confirm
-#     await update.message.reply_text(
-#         f"Human takeover ON for client `{client_username}` under creator `{creator_username}`."
-#     )
-
-# async def human_off(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     # 1. Identify the creator
-#     creator_username = update.effective_user.username
-#     print('Creator username accessed via Human Off', creator_username)
-
-#     # 2. Parse the target client ID from args
-#     command_args = context.args
-#     if not command_args:
-#         await update.message.reply_text("Usage: /human_off <client_business_id>")
-#         return
-#     client_username = command_args[0]
-#     print(client_username)
-
-#     # 3. Toggle off
-#     human_takeover_flags[(creator_username, client_username)] = False
-
-#     # 4. Confirm
-#     await update.message.reply_text(
-#         f"Human takeover OFF for client `{client_username}` under creator `{creator_username}`."
-#     )
 
 def start(update: Update, context: CallbackContext) -> None:
 	user_id = update.effective_user.id 

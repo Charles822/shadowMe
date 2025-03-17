@@ -78,8 +78,6 @@ llm = ChatMistralAI(model="mistral-large-latest")
 # RAG Set Up
 # In Memory
 # embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
-# # in memory set up / need other set up when connect to DB
-# vector_store = InMemoryVectorStore(embeddings)
 
 # pinecone
 embeddings = MistralAIEmbeddings(model="mistral-embed")

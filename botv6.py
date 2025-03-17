@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 from asgiref.sync import sync_to_async
 
 from IPython.display import Image, display
-from langchain_mistralai import ChatMistralAI
+from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
 from langchain_cohere import ChatCohere
 
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -36,6 +36,8 @@ from typing_extensions import List, TypedDict
 
 
 # modules to implement retrieval in conversation chatbot
+from langchain_pinecone import PineconeVectorStore
+from pinecone import Pinecone
 from langchain_core.tools import tool
 from langchain_core.messages import (
     SystemMessage, 
@@ -74,9 +76,20 @@ llm = ChatMistralAI(model="mistral-large-latest")
 
 
 # RAG Set Up
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
-# in memory set up / need other set up when connect to DB
-vector_store = InMemoryVectorStore(embeddings)
+# In Memory
+# embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+# # in memory set up / need other set up when connect to DB
+# vector_store = InMemoryVectorStore(embeddings)
+
+# pinecone
+embeddings = MistralAIEmbeddings(model="mistral-embed")
+pc_api_key = os.getenv('PINECONE_API_KEY')
+
+pc = Pinecone(api_key=pc_api_key)
+index = pc.Index("mistral-embed")
+
+# Rag source
+vector_store = PineconeVectorStore(embedding=embeddings, index=index)
 
 
 # Get the hidden sources
@@ -86,29 +99,11 @@ def load_file(file_name):
         return file.read()
 
 
-rag_source = load_file("FAQ_PATH") # rag source FAQ
+# rag_source = load_file("FAQ_PATH") # rag source FAQ
 character_card = load_file("CHARACTER_CARD_PATH") # system prompt
 
-docs = [
-    Document(
-        page_content=rag_source,
-        metadata={"source": "FAQ", "title": "Frequently Asked Questions"}
-    )
-]
-
-# print(docs)
-
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=20)
-all_splits = text_splitter.split_documents(docs)
-
-
-# Index chunks
-_ = vector_store.add_documents(documents=all_splits)
 
 graph_builder = StateGraph(MessagesState)
-
-
-# conversation = [SystemMessage(character_card)]
 
 # TOOLS 
 # Create a tool for the retrieval, allows better query to search / or respond directly
